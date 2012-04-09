@@ -16,6 +16,11 @@ calibredb = 'calibredb'
 suffixes = ['mobi']
 logging.basicConfig(filename=logfile, level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 
+def pipe(args, stdin=None):
+    p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    (out, err) = p.communicate(stdin)
+    return (out, err, p.returncode)
+
 def receive_attachment():
     # read message
     e = email.message_from_file(sys.stdin)
@@ -41,16 +46,21 @@ def receive_attachment():
 class BookFile(object):
     def __init__(self, fname):
         self.fname = fname
+        self.library = lib_path
+        # obtain metadata by calling ebook-meta
 
     def to_library(self):
         logging.info('Adding {0} to library'.format(self.fname))
         args = [calibredb, 'add']
-        args.extend(['--with-library', lib_path])
+        args.extend(['--with-library', self.library])
         args.append(self.fname)
 
-        p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        (out, _) = p.communicate()
-        logging.info('Child process finished with return code {0} and following output\n{1}'.format(p.returncode, out))
+        (out, _, ret) = pipe(args)
+        logging.info('Child process finished with return code {0} and following output\n{1}'.format(ret, out))
+
+        if 'following books were not added' in out.splitlines()[0]:
+            logging.warning('Book not inserted - already exists in the library')
+            raise RuntimeError('Book already exists in the library')
 
     def to_library_format(self, uuid):
         pass
