@@ -32,11 +32,11 @@ def receive_attachment():
         logging.error('No suitable attachment found')
         raise RuntimeError('No attachment found')
 
-    return f.name
-
     # write it to temporary file
     with tempfile.NamedTemporaryFile(mode='w', dir=tmp_dir, suffix='.mobi', delete=False) as f:
         f.write(part.get_payload(decode=True))
+
+    return f.name
 
 class BookFile(object):
     def __init__(self, fname):
