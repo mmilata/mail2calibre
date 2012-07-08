@@ -1,0 +1,56 @@
+#! /bin/sh
+# Calibre mail delivery init script
+
+# settings
+CHROOT=/home/calibre/chroot
+PIDFILE=/home/calibre/calibre-mail-delivery.pid
+MAILSCRIPT=/home/calibre/mail2calibre.py
+SOCKET=/home/calibre/mail2calibre-socket
+
+# user and group the program will run under
+USER=calibre
+GROUP=calibre
+
+# end of settings
+
+N="calibre mail delivery"
+
+do_start ()
+{
+    start-stop-daemon --start --chroot $CHROOT --chuid $USER:$GROUP --background --pidfile $CHROOT$PIDFILE --make-pidfile --startas "/usr/bin/socat" -- UNIX-LISTEN:$SOCKET,fork SYSTEM:$MAILSCRIPT
+}
+
+do_stop ()
+{
+    start-stop-daemon --stop --pidfile $CHROOT$PIDFILE
+}
+
+set -e
+
+case "$1" in
+  start)
+    echo -n "Starting $N: "
+    do_start
+    echo "done."
+    ;;
+
+  stop)
+    echo -n "Stopping $N: "
+    do_stop
+    echo "done."
+    ;;
+
+  reload|force-reload|restart)
+    echo -n "Restarting $N: "
+    do_stop
+    do_start
+    echo "done."
+    ;;
+  *)
+    echo "Usage: calibre-mail-delivery {start|stop|restart|reload|force-reload}" >&2
+    exit 1
+    ;;
+esac
+
+exit 0
+
